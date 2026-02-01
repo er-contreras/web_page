@@ -1,11 +1,8 @@
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
+use std::env;
 
-enum TagType {
-    H1,
-    P,
-    Div,
-}
+enum TagType { H1, P }
 
 struct Element {
     tag: TagType,
@@ -17,7 +14,6 @@ impl Element {
         let tag = match self.tag {
             TagType::H1 => "h1",
             TagType::P => "p",
-            TagType::Div => "div",
         };
 
         format!("<{}>{}</{}>", tag, self.content, tag)
@@ -33,7 +29,16 @@ fn handle_connection(mut stream: TcpStream) {
         content: String::from("Software Architect with Rust"),
     };
 
-    let response_body = my_title.render();
+    let description = Element {
+        tag: TagType::P,
+        content: String::from("Handmade server running ..."),
+    };
+
+    let response_body = format!(
+        "<!DOCTYPE html><html><body>{} {}</body></html>",
+        my_title.render(),
+        description.render()
+    );
 
     let response = format!(
         "HTTP/1.1 200 OK\r\n\
@@ -51,9 +56,12 @@ fn handle_connection(mut stream: TcpStream) {
 }
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8080").expect("Couldn't connnect with port 8080");
+    let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let address = format!("0.0.0.0:{}", port);
 
-    println!("Server running on http://127.0.0.1:8080");
+    let listener = TcpListener::bind(&address).expect("Couldn't connnect with port 8080");
+
+    println!("Server running on {}", address);
 
     for stream in listener.incoming() {
         match stream {
